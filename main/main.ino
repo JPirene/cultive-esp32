@@ -34,6 +34,8 @@ const char* ntpServer1 = "pool.ntp.org";
 const char* ntpServer2 = "time.nist.gov";
 const long  gmtOffset_sec = -10800;
 const int   daylightOffset_sec = -10800;
+String data = "";
+String caminhoUmidade = ""; 
 
 void setup() {
   
@@ -47,7 +49,6 @@ void setup() {
   pinMode(escola, OUTPUT);
   pinMode(canteiro1, OUTPUT);
   pinMode(recebeUmidade, INPUT);
-
 }
 
 void loop() {
@@ -59,9 +60,11 @@ void loop() {
    conectarWifi(); 
   }
 
+    //date = obterData();
+    //Serial.println(data);
+  
   
   float umidade = analogRead(recebeUmidade);  
-  // Serial.print(umidade);
   // Firebase.setString(bd, "/escola/canteiro1/umidade", umidade);
   
   // umidade normal sem colocar na terra 4050 [PRECISA DE ÁGUA]
@@ -91,11 +94,13 @@ void loop() {
   }
 
   if (Firebase.get(bd, "/escola/canteiro1/isOpen")) {
+    caminhoUmidade = "/escola/canteiro1/umidade/"+obterData();
+     Firebase.setString(bd, caminhoUmidade, umidade);
     if (bd.dataType() == "string") {
       String RL1 = bd.stringData();
       if (RL1 == "0") {
         // as ações
-        // Firebase.pushString(bd, "/escola/canteiro1/ultimoStatusUmidade", umidade);  //antes de desligar
+        //antes de desligar
         Firebase.setString(bd, "/escola/canteiro1/status", "Fechado");
         digitalWrite(canteiro1, HIGH);
       } else if (RL1 == "1") {
@@ -191,12 +196,39 @@ String obterData()
 //tm_year  int    years since 1900
 //tm_wday  int    days since Sunday          0-6
 //tm_yday  int    days since January 1       0-365
-//tm_isdst int    Daylight Saving Time flag   
+//tm_isdst int    Daylight Saving Time flag 
 
-  String dataVal =  String(timeinfo.tm_mday) + "/" + String(timeinfo.tm_mon+1) + "/" + String(timeinfo.tm_year + 1900) + 
-  " " + String(timeinfo.tm_hour) +":"+ String(timeinfo.tm_min) +":"+ String(timeinfo.tm_sec) ;
+  //Formatando Mes
+  String mes = String(timeinfo.tm_mon+1);
+  mes = formatarData(mes);
+  //Formatando Dia
+  String dia = String(timeinfo.tm_mday);
+  dia = formatarData(dia);
+  //Formatando Hora
+  String hora = String(timeinfo.tm_hour);
+  dia = formatarData(hora);
+  //Formatando Min
+  String minuto = String(timeinfo.tm_min);
+  minuto = formatarData(minuto);
+  //Formatando Seg
+  String segundo = String(timeinfo.tm_sec);
+  segundo = formatarData(segundo);
+
+  String dataVal =  String(timeinfo.tm_year + 1900) + "-" + mes + "-" + dia + 
+  " " + hora +":"+ minuto +":"+ segundo;
   Serial.println(dataVal);
   return dataVal;
+}
+
+String formatarData(String date)
+{
+  if(date.length()<2)
+  {
+    return "0"+date;
+  }else {
+    return date;
+  }
+
 }
 
 // Função de retorno de chamada (é chamado quando o tempo se ajusta via NTP)
